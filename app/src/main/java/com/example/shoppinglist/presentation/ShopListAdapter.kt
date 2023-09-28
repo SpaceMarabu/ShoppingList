@@ -1,28 +1,35 @@
 package com.example.shoppinglist.presentation
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
-import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.ListAdapter
 import com.example.shoppinglist.domain.ShopItem
 
+//замена для использования более легкого ShopItemDiffCallback
+//class ShopListAdapter : RecyclerView.Adapter<ShopListAdapter.ShopItemViewHolder>() {
+class ShopListAdapter : ListAdapter<ShopItem, ShopItemViewHolder>(ShopItemDiffCallback()) {
 
-class ShopListAdapter : RecyclerView.Adapter<ShopListAdapter.ShopItemViewHolder>() {
 
 
+//    var shopList = listOf<ShopItem>() тоже для ShopItemDiffCallback
+//поскольку ListAdapter хранит в себе всю логику работы со списком
 
+//        set(value) {
+//            val callback = ShopListDiffCallback(shopList, value)
+//            val diffResult = DiffUtil.calculateDiff(callback)   //собираю изменения в листе
+//            diffResult.dispatchUpdatesTo(this)          //передаю изменения в адаптер
+//            field = value
+//        }
 
-    var shopList = listOf<ShopItem>()
-        set(value) {
-            field = value
-            notifyDataSetChanged()
-        }
+    //лямбда функция, которая хранится в переменной
+    var onShopItemLongClickListener: ((ShopItem) -> Unit)? = null
+    var onShopItemClickListener: ((ShopItem) -> Unit)? = null
 
     //    Расчет количества элементов в адаптере
-    override fun getItemCount(): Int {
-        return shopList.size
-    }
+    //не нужен с ListAdapter
+//    override fun getItemCount(): Int {
+//        return shopList.size
+//    }
 
     //    создаем вью из макета
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ShopItemViewHolder {
@@ -41,10 +48,15 @@ class ShopListAdapter : RecyclerView.Adapter<ShopListAdapter.ShopItemViewHolder>
 
     //    наполняем видимые на экране вью контентом
     override fun onBindViewHolder(holder: ShopItemViewHolder, position: Int) {
-        val shopItem = shopList[position]
-        holder.itemView.setOnLongClickListener({
+        val shopItem = getItem(position)
+        holder.itemView.setOnLongClickListener {
+            onShopItemLongClickListener?.invoke(shopItem)//вызов только если не null
             true
-        })
+        }
+        holder.itemView.setOnClickListener {
+            onShopItemClickListener?.invoke(shopItem)
+        }
+//        holder.itemView.
         holder.tvName.text = shopItem.name
         holder.tvCount.text = shopItem.count.toString()
     }
@@ -53,7 +65,7 @@ class ShopListAdapter : RecyclerView.Adapter<ShopListAdapter.ShopItemViewHolder>
 //    он полетит в onCreateViewHolder в качестве  viewType параметра
 //    переопределять только если нужно использовать несколько типов вью
     override fun getItemViewType(position: Int): Int {
-        val shopItem: ShopItem = shopList[position]
+        val shopItem: ShopItem = getItem(position)
         return if (shopItem.enabled) {
             VIEW_TYPE_ITEM_ENABLED
         } else {
@@ -71,11 +83,7 @@ class ShopListAdapter : RecyclerView.Adapter<ShopListAdapter.ShopItemViewHolder>
 //        ))
 //    }
 
-    //      внутренний класс, который содержит ссылки на заполняемые объекты в созданной вью из макета
-    class ShopItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val tvName = view.findViewById<TextView>(com.example.shoppinglist.R.id.tv_name)
-        val tvCount = view.findViewById<TextView>(com.example.shoppinglist.R.id.tv_count)
-    }
+
 
     companion object {
         const val VIEW_TYPE_ITEM_ENABLED = 100

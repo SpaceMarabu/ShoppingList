@@ -26,6 +26,7 @@ object ShopListRepositoryImpl: ShopListRepository {
             shopItem.id = autoIncrementId++
         }
         shopList.add(shopItem)
+        shopList.sortBy { it.count }
         updateList()
     }
 
