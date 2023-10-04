@@ -1,5 +1,6 @@
 package com.example.shoppinglist.presentation
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -22,6 +23,8 @@ class MainActivity : AppCompatActivity() {
 //            shopListAdapter.shopList = it  не нужен с появлениемListAdapter
             shopListAdapter.submitList(it)
         }
+        val intent: Intent = ShopItemActivity.newIntent(this)
+        startActivity(intent)
     }
 
 
