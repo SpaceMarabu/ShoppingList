@@ -21,6 +21,8 @@ class ShopItemFragment(
 ) : Fragment() {
 
     private lateinit var viewModel: ShopItemViewModel
+    private lateinit var onEditingFinishListener: OnEditingFinishListener
+
     private lateinit var tilName: TextInputLayout
     private lateinit var tilCount: TextInputLayout
     private lateinit var etName: EditText
@@ -36,11 +38,15 @@ class ShopItemFragment(
     var errorInputName = false
     var errorInputCount = false
 
+    //при создании класса
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         parseParams()
     }
 
+
+
+//    как создать вью
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -49,6 +55,7 @@ class ShopItemFragment(
         return inflater.inflate(R.layout.fragment_shop_item, container, false)
     }
 
+//    после создания вью
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(this)[ShopItemViewModel::class.java]
@@ -58,6 +65,16 @@ class ShopItemFragment(
         setTextChangedListeners()
         launchViewByMode()
     }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is OnEditingFinishListener) {
+            onEditingFinishListener = context
+        } else {
+            throw RuntimeException("Activity must implement OnEditingFinishListener")
+        }
+    }
+
 
     private fun launchViewByMode() {
         when (screenMode) {
@@ -70,7 +87,7 @@ class ShopItemFragment(
         viewModel.getShopItem(shopItemId)
         //жизненный цикл фрагмент отличается от ЖЦ view. По этому viewLifecycleOwner
         viewModel.shopItem.observe(viewLifecycleOwner) {
-            val oldName = it.name.toString()
+            val oldName = it.name
             val oldCount = it.count.toString()
             etName.setText(oldName)
             etCount.setText(oldCount)
@@ -145,6 +162,7 @@ class ShopItemFragment(
         viewModel.shouldCloseScreen.observe(viewLifecycleOwner) {
             activity?.onBackPressed()
 //            requireActivity() - то же что и активити, но проверка на нулл не нужна. Может упасть
+            onEditingFinishListener.onEditingFinish()
         }
     }
 
@@ -184,6 +202,11 @@ class ShopItemFragment(
         })
     }
 
+    interface OnEditingFinishListener {
+
+        fun onEditingFinish()
+    }
+
     companion object {
 
         private const val SCREEN_MODE = "extra_mode"
@@ -193,7 +216,7 @@ class ShopItemFragment(
         private const val SHOP_ITEM_ID = "extra_shop_item_id"
 
 
-        //        фабричные методы создание фрагмента
+        //        фабричные методы создание фрагмента. Складываю данные в бандл
         fun newInstanceAddItem(): ShopItemFragment {
             val args = Bundle().apply{
                 putString(SCREEN_MODE, MODE_ADD)
@@ -205,7 +228,7 @@ class ShopItemFragment(
 
         fun newInstanceEditItem(shopItemId: Int): ShopItemFragment {
             val args = Bundle().apply{
-                putString(SCREEN_MODE, MODE_ADD)
+                putString(SCREEN_MODE, MODE_EDIT)
                 putInt(SHOP_ITEM_ID, shopItemId)
             }
             return ShopItemFragment().apply {

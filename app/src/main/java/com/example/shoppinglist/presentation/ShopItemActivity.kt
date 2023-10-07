@@ -18,7 +18,7 @@ import java.lang.RuntimeException
 
 //большая часть кода переехала во фрагмент fragment_shop_item
 
-class ShopItemActivity : AppCompatActivity() {
+class ShopItemActivity : AppCompatActivity(), ShopItemFragment.OnEditingFinishListener {
 
 //    private lateinit var viewModel: ShopItemViewModel
 //    private lateinit var tilName: TextInputLayout
@@ -26,12 +26,12 @@ class ShopItemActivity : AppCompatActivity() {
 //    private lateinit var etName: EditText
 //    private lateinit var etCount: EditText
 //    private lateinit var buttonSave: Button
-//
-//
+
+
     private var screenMode = MODE_UNKNOWN
     private var shopItemId = ShopItem.UNDEFINED_ID
-//
-//
+
+
 //    var name = ""
 //    var count = ""
 //    var errorInputName = false
@@ -42,13 +42,17 @@ class ShopItemActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_shop_item)
         parseIntent()
-        launchViewByMode()
+        //проверяю создается впервые, или пересоздается экран
+        if (savedInstanceState == null) {
+            launchViewByMode()
+        }
 //        viewModel = ViewModelProvider(this)[ShopItemViewModel::class.java]
 //        initViews()
 //        observeErrors()
 //        observeFinish()
 //        setTextChangedListeners()
     }
+
 
 //    private fun launchViewByModeOld() {
 //        when (screenMode) {
@@ -57,6 +61,10 @@ class ShopItemActivity : AppCompatActivity() {
 //        }
 //    }
 
+    override fun onEditingFinish() {
+        finish()
+    }
+
     private fun launchViewByMode() {
         val fragment = when (screenMode) {
             MODE_EDIT -> ShopItemFragment.newInstanceEditItem(shopItemId)
@@ -64,7 +72,9 @@ class ShopItemActivity : AppCompatActivity() {
             else -> throw RuntimeException("Unknown screenmode $screenMode")
         }
 //        вызов транзакции с фрагментом(запуск фрагмента)
-        supportFragmentManager.beginTransaction().add(R.id.shop_item_container, fragment)
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.shop_item_container, fragment)
+            .addToBackStack(null)
             .commit()
     }
 //
