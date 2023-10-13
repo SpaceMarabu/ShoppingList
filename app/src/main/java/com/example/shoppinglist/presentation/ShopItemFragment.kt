@@ -1,5 +1,6 @@
 package com.example.shoppinglist.presentation
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -10,9 +11,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.shoppinglist.R
+import com.example.shoppinglist.databinding.FragmentShopItemBinding
 import com.example.shoppinglist.domain.ShopItem
 import com.google.android.material.textfield.TextInputLayout
 import java.lang.RuntimeException
@@ -23,11 +26,7 @@ class ShopItemFragment(
     private lateinit var viewModel: ShopItemViewModel
     private lateinit var onEditingFinishListener: OnEditingFinishListener
 
-    private lateinit var tilName: TextInputLayout
-    private lateinit var tilCount: TextInputLayout
-    private lateinit var etName: EditText
-    private lateinit var etCount: EditText
-    private lateinit var buttonSave: Button
+
 
     private var screenMode: String = MODE_UNKNOWN
     private var shopItemId: Int = ShopItem.UNDEFINED_ID
@@ -38,6 +37,10 @@ class ShopItemFragment(
     var errorInputName = false
     var errorInputCount = false
 
+    private var _binding: FragmentShopItemBinding? = null
+    private val binding: FragmentShopItemBinding
+        get() = _binding ?: throw RuntimeException("FragmentShopItemBinding == null")
+
     //при создании класса
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,26 +48,28 @@ class ShopItemFragment(
     }
 
 
-
-//    как создать вью
+    //    как создать вью
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_shop_item, container, false)
+        _binding = FragmentShopItemBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
-//    после создания вью
+
+    //    после создания вью
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(this)[ShopItemViewModel::class.java]
-        initViews(view)
-        observeErrors()
+        binding.viewModel = viewModel
+        binding.lifecycleOwner = viewLifecycleOwner
         observeFinish()
         setTextChangedListeners()
         launchViewByMode()
     }
+
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -85,16 +90,9 @@ class ShopItemFragment(
 
     private fun launchEditMode() {
         viewModel.getShopItem(shopItemId)
-        //жизненный цикл фрагмент отличается от ЖЦ view. По этому viewLifecycleOwner
-        viewModel.shopItem.observe(viewLifecycleOwner) {
-            val oldName = it.name
-            val oldCount = it.count.toString()
-            etName.setText(oldName)
-            etCount.setText(oldCount)
-        }
-        buttonSave.setOnClickListener {
-            name = etName.text.toString()
-            count = etCount.text.toString()
+        binding.saveButton.setOnClickListener {
+            name = binding.etName.text.toString()
+            count = binding.etCount.text.toString()
             viewModel.editShopItem(name, count)
             checkErrors()
         }
@@ -102,9 +100,9 @@ class ShopItemFragment(
     }
 
     private fun launchAddMode() {
-        buttonSave.setOnClickListener {
-            name = etName.text.toString()
-            count = etCount.text.toString()
+        binding.saveButton.setOnClickListener {
+            name = binding.etName.text.toString()
+            count = binding.etCount.text.toString()
             viewModel.addShopItem(name, count)
             checkErrors()
         }
@@ -129,33 +127,10 @@ class ShopItemFragment(
         }
     }
 
-    //    у фрагмента нет метода findViewById, по этому вызов от view
-    private fun initViews(view: View) {
-        tilName = view.findViewById(R.id.til_name)
-        tilCount = view.findViewById(R.id.til_count)
-        etName = view.findViewById(R.id.et_name)
-        etCount = view.findViewById(R.id.et_count)
-        buttonSave = view.findViewById(R.id.save_button)
-    }
 
 
-    private fun observeErrors() {
-        //подписываюсь на ошибки валидации полей
-        viewModel.errorInputName.observe(viewLifecycleOwner) {
-            val message = if (it) {
-                "Ошибка в поле ввода"
-            } else {
-                null
-            }
-        }
-        viewModel.errorInputCount.observe(viewLifecycleOwner) {
-            val message = if (it) {
-                "Слишко мало"
-            } else {
-                null
-            }
-        }
-    }
+
+
 
     private fun observeFinish() {
 //        если прилетело хоть что, в нашем случае Unit, то окей
@@ -169,32 +144,32 @@ class ShopItemFragment(
     //    вывожу подсказки по ошибкам
     private fun checkErrors() {
         if (errorInputName) {
-            tilName.error = "Введите имя"
+            binding.tilName.error = "Введите имя"
         }
         if (errorInputCount) {
-            tilCount.error = "Слишком мало"
+            binding.tilCount.error = "Слишком мало"
         }
     }
 
     //    слушатели изменения поля ввода. Если после ошибки начали вводить по новой, то она исчезнет
     private fun setTextChangedListeners() {
-        etName.addTextChangedListener(object : TextWatcher {
+        binding.etName.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
             }
 
             override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                tilName.isErrorEnabled = false
+                binding.tilName.isErrorEnabled = false
             }
 
             override fun afterTextChanged(p0: Editable?) {
             }
         })
-        etCount.addTextChangedListener(object : TextWatcher {
+        binding.etCount.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
             }
 
             override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                tilCount.isErrorEnabled = false
+                binding.tilCount.isErrorEnabled = false
             }
 
             override fun afterTextChanged(p0: Editable?) {
@@ -218,7 +193,7 @@ class ShopItemFragment(
 
         //        фабричные методы создание фрагмента. Складываю данные в бандл
         fun newInstanceAddItem(): ShopItemFragment {
-            val args = Bundle().apply{
+            val args = Bundle().apply {
                 putString(SCREEN_MODE, MODE_ADD)
             }
             return ShopItemFragment().apply {
@@ -227,7 +202,7 @@ class ShopItemFragment(
         }
 
         fun newInstanceEditItem(shopItemId: Int): ShopItemFragment {
-            val args = Bundle().apply{
+            val args = Bundle().apply {
                 putString(SCREEN_MODE, MODE_EDIT)
                 putInt(SHOP_ITEM_ID, shopItemId)
             }
