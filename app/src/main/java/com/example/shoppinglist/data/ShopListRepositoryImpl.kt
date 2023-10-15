@@ -2,7 +2,9 @@ package com.example.shoppinglist.data
 
 import android.app.Application
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations
 import com.example.shoppinglist.domain.ShopItem
 import com.example.shoppinglist.domain.ShopListRepository
 import java.lang.RuntimeException
@@ -16,23 +18,38 @@ class ShopListRepositoryImpl(
     private val mapper = ShopListMapper()
 
 
-
-    override fun addShopItem(shopItem: ShopItem) {
+    override suspend
+    fun addShopItem(shopItem: ShopItem) {
         shopListDao.addShopItem(mapper.mapEntityToDbModel(shopItem))
     }
 
-    override fun editShopItem(shopItem: ShopItem) {
+    override suspend
+    fun editShopItem(shopItem: ShopItem) {
         shopListDao.addShopItem(mapper.mapEntityToDbModel(shopItem))
     }
 
-    override fun getShopItem(shopItemId: Int): ShopItem {
+    override suspend
+    fun getShopItem(shopItemId: Int): ShopItem {
         val dbModelShopItem = shopListDao.getShopItem(shopItemId)
         return mapper.mapDbModelToEntity(dbModelShopItem)
     }
 
-    override fun removeShopItem(shopItem: ShopItem) {
+    override suspend
+    fun removeShopItem(shopItem: ShopItem) {
         shopListDao.deleteShopItem(shopItem.id)
     }
 
-    override fun getShopList(): LiveData<List<ShopItem>> = shopListDao.getShopList()
+//    вариант 1
+//    override fun getShopList(): LiveData<List<ShopItem>> = MediatorLiveData<List<ShopItem>>().apply {
+//        addSource(shopListDao.getShopList()) { //источник данных
+//            value = mapper.mapListDbModelToListEntity(it)
+//        }
+//    }
+
+    //    вариант 2, если нужна просто трафсформация объекта
+    override fun getShopList(): LiveData<List<ShopItem>> = Transformations.map(
+        shopListDao.getShopList()
+    ) {
+        mapper.mapListDbModelToListEntity(it)
+    }
 }

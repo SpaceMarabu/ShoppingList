@@ -1,21 +1,27 @@
 package com.example.shoppinglist.presentation
 
+import android.app.Application
 import android.text.Editable
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.*
 import com.example.shoppinglist.data.ShopListRepositoryImpl
 import com.example.shoppinglist.domain.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import java.lang.Exception
 import java.util.function.BiPredicate
 
-class ShopItemViewModel : ViewModel() {
+class ShopItemViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = ShopListRepositoryImpl
+    private val repository = ShopListRepositoryImpl(application)
 
     private val editShopItemUseCase = EditShopItemUseCase(repository)
     private val addShopItemUseCase = AddShopItemUseCase(repository)
     private val getShopItemUseCase = GetShopItemUseCase(repository)
+
+//        замена на viewmodelscope
+//    private val coroutineScope = CoroutineScope(Dispatchers.Main)//если бы не рум, то лучше IO
 
 
     //    инкапсулирую переменную errorInputName, переопределив геттер
@@ -38,7 +44,9 @@ class ShopItemViewModel : ViewModel() {
 
 
     fun getShopItem(shopItemId: Int) {
-        _shopItem.value = getShopItemUseCase.getShopItem(shopItemId)
+        viewModelScope.launch {
+            _shopItem.postValue(getShopItemUseCase.getShopItem(shopItemId))
+        }
     }
 
     fun editShopItem(inputName: String?, inputCount: String?) {
@@ -47,8 +55,10 @@ class ShopItemViewModel : ViewModel() {
         val fieldsValid = validateInput(name, count)
         if (fieldsValid) {
             _shopItem.value?.let {
-                val item = it.copy(name = name, count = count)
-                editShopItemUseCase.editShopItem(item)
+                viewModelScope.launch {
+                    val item = it.copy(name = name, count = count)
+                    editShopItemUseCase.editShopItem(item)
+                }
                 finishWork()
             }
         }
@@ -59,9 +69,11 @@ class ShopItemViewModel : ViewModel() {
         val count = parseCount(inputCount)
         val fieldsValid = validateInput(name, count)
         if (fieldsValid) {
-            val shopItem = ShopItem(name, count, true)
-            addShopItemUseCase.addItem(shopItem)
-            finishWork()
+            viewModelScope.launch {
+                val shopItem = ShopItem(name, count, true)
+                addShopItemUseCase.addItem(shopItem)
+                finishWork()
+            }
         }
     }
 
@@ -102,5 +114,9 @@ class ShopItemViewModel : ViewModel() {
         _shouldCloseScreen.value = Unit
     }
 
-
+//    замена на viewmodelscope
+//    override fun onCleared() {
+//        super.onCleared()
+//        coroutineScope.cancel()
+//    }
 }
